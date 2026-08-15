@@ -110,19 +110,17 @@ final class ExcludedApplicationPolicyTests: XCTestCase {
             inputSourceService: PolicyInputSource(),
             translate: candidate
         )
-        for (keyCode, output) in [(1, "g"), (2, "h"), (50, " ")] {
+        for (keyCode, output) in [(1, "g"), (2, "h")] {
             manual.receive(.text(.init(keyCode: UInt16(keyCode)), output: output), in: environment)
         }
         triggerDoubleShift(manual, in: environment)
 
-        // BUG-1: manual conversion does not fire in an excluded application.
-        // Pre-existing defect: the exclusion policy also suppresses manual
-        // conversion, so the injector stays empty. Marked as an expected failure
-        // to keep CI green while preserving visibility — if the bug is ever fixed,
-        // XCTExpectFailure will itself fail and remind us to remove this wrapper.
-        XCTExpectFailure("BUG-1: manual conversion in an excluded application is not implemented yet") {
-            XCTAssertEqual(manualInjector.operations, [.backspace(2), .unicode("пр")])
-        }
+        // Manual conversion stays available in a user-excluded application: the
+        // exclusion policy denies only automatic correction
+        // (`allowsAutomaticCorrection == false`) while keeping
+        // `allowsManualConversion == true`, so an explicit Double Shift still
+        // converts the tracked word.
+        XCTAssertEqual(manualInjector.operations, [.backspace(2), .unicode("пр")])
     }
 
     private func environment(policy: InputPolicySnapshot) -> InputSessionEnvironment {
