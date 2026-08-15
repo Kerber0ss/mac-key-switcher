@@ -58,6 +58,14 @@ else
 fi
 rm -rf "$staging"
 
-# 6. Print both artifact paths.
+# 6. SHA-256 checksums next to each artifact (partial substitute for the missing
+#    notarization — lets users verify integrity). Written with bare filenames so
+#    `shasum -a 256 -c <file>.sha256` works from inside the archive dir.
+( cd "$archive_dir" && shasum -a 256 "$(basename "$zip")" > "$(basename "$zip").sha256" )
+( cd "$archive_dir" && shasum -a 256 "$(basename "$dmg")" > "$(basename "$dmg").sha256" )
+
+# 7. Print all artifact paths.
 echo "$root/$zip"
 echo "$root/$dmg"
+echo "$root/$zip.sha256"
+echo "$root/$dmg.sha256"

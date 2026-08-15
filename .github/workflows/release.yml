@@ -1,0 +1,114 @@
+name: Release
+
+# Builds the unsigned/ad-hoc DMG + ZIP and publishes a GitHub Release whenever a
+# version tag (v*) is pushed. See docs/release-unsigned.md (Phase B).
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write   # required to create the GitHub Release
+
+jobs:
+  release:
+    name: Build & publish (macOS, arm64)
+    runs-on: macos-15
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select latest Xcode (Swift 6)
+        run: |
+          latest=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$latest" ]; then latest=$(ls -d /Applications/Xcode*.app | sort -V | tail -1); fi
+          echo "Selecting $latest"
+          sudo xcode-select -s "$latest/Contents/Developer"
+
+      - name: Show toolchain
+        run: |
+          swift --version
+          sw_vers
+
+      - name: Run tests
+        run: swift test
+
+      - name: Verify tag matches Info.plist version
+        run: |
+          plist_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)"
+          tag_version="${GITHUB_REF_NAME#v}"
+          echo "Info.plist: $plist_version | tag: $tag_version"
+          if [ "$plist_version" != "$tag_version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match Info.plist version $plist_version. Bump CFBundleShortVersionString before tagging."
+            exit 1
+          fi
+          echo "VERSION=$plist_version" >> "$GITHUB_ENV"
+
+      - name: Package DMG + ZIP (+ SHA-256)
+        run: zsh Scripts/package-unsigned.sh
+
+      - name: Generate release notes
+        run: |
+          cd .build/release-artifacts
+          zip_sum="$(cut -d' ' -f1 "MacKeySwitcher-${VERSION}-arm64.zip.sha256")"
+          dmg_sum="$(cut -d' ' -f1 "MacKeySwitcher-${VERSION}-arm64.dmg.sha256")"
+          cat > RELEASE_NOTES.md <<EOF
+          ## Mac Key Switcher ${VERSION}
+
+          Automatic keyboard-layout switcher for macOS (Apple Silicon / arm64).
+
+          Download the **\`.dmg\`** (drag into Applications) or the **\`.zip\`**. Both contain the same app.
+
+          > ⚠️ **This app is not notarized by Apple.** It is ad-hoc signed because the
+          > project is distributed **without** the paid Apple Developer Program. The source
+          > code is open, the app **does not use the network** (see ADR-0004), and you can
+          > verify integrity via the SHA-256 sums below. On first launch macOS will show a
+          > warning — this is expected; the workaround is below.
+
+          ### First launch — bypassing Gatekeeper
+
+          **Option 1 — right-click (easiest):**
+          1. Drag \`Mac Key Switcher.app\` into the Applications folder.
+          2. **Right-click it → "Open".**
+          3. In the dialog, click **"Open"** again. After that it launches normally.
+
+          **Option 2 — remove the quarantine attribute** (if Option 1 fails, e.g. "is damaged"):
+          \`\`\`sh
+          xattr -dr com.apple.quarantine "/Applications/Mac Key Switcher.app"
+          \`\`\`
+          Then launch with a normal double-click.
+
+          **Option 3 — System Settings → Privacy & Security:** after the first launch
+          attempt an **"Open Anyway"** button appears there.
+
+          ### After installation
+
+          Grant the app **Accessibility** and **Input Monitoring** permissions
+          (System Settings → Privacy & Security). This is separate from Gatekeeper and is
+          required for layout switching to work.
+
+          > **Known limitation (ad-hoc signing):** the bundle identity may change between
+          > builds, so macOS may occasionally ask you to re-grant Accessibility / Input
+          > Monitoring after an update.
+
+          ### Integrity verification (SHA-256)
+
+          \`\`\`
+          ${zip_sum}  MacKeySwitcher-${VERSION}-arm64.zip
+          ${dmg_sum}  MacKeySwitcher-${VERSION}-arm64.dmg
+          \`\`\`
+
+          Verify with: \`shasum -a 256 -c MacKeySwitcher-${VERSION}-arm64.dmg.sha256\`
+          EOF
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Mac Key Switcher ${{ env.VERSION }}
+          body_path: .build/release-artifacts/RELEASE_NOTES.md
+          files: |
+            .build/release-artifacts/MacKeySwitcher-${{ env.VERSION }}-arm64.dmg
+            .build/release-artifacts/MacKeySwitcher-${{ env.VERSION }}-arm64.zip
+            .build/release-artifacts/MacKeySwitcher-${{ env.VERSION }}-arm64.dmg.sha256
+            .build/release-artifacts/MacKeySwitcher-${{ env.VERSION }}-arm64.zip.sha256
