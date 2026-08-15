@@ -1,0 +1,21 @@
+.build/
+.swiftpm-cache/
+.swiftpm-config/
+.swiftpm-security/
+
+# macOS
+.DS_Store
+
+# Local dev tooling / agent scaffolding (not part of the product)
+.agents/
+.claude/
+.scratch/
+skills-lock.json
+AGENTS.md
+
+# Local-only planning & internal docs (kept on disk, not published)
+CONTEXT.md
+Opus_TODO.md
+PLAN.md
+TODO.md
+docs/

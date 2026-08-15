@@ -1,0 +1,26 @@
+# Original minimal frequency data for Mac Key Switcher, version 1.
+# Created for this repository; see LICENSE.md and ATTRIBUTION.md.
+# language\trank\tword
+en	1	hello
+en	2	world
+en	3	keyboard
+en	4	test
+en	5	you
+en	6	yes
+en	7	no
+en	8	hey
+en	9	name
+en	10	thanks
+en	11	key
+ru	1	привет
+ru	2	мир
+ru	3	клавиатура
+ru	4	тест
+ru	5	да
+ru	6	нет
+ru	7	имя
+ru	8	спасибо
+ru	9	здравствуйте
+ru	10	как
+ru	11	дела
+ru	12	встретились

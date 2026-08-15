@@ -1,0 +1,21 @@
+# Fixed detector evaluation corpus, version 1.
+# category\tword\tcandidate
+mustCorrect	ghbdtn	привет
+mustCorrect	руддщ	hello
+mustCorrect	vbh	мир
+mustCorrect	ntcn	тест
+mustCorrect	rfr	как
+mustCorrect	ltkf	дела
+mustKeep	лун	key
+mustCorrect	dcnhtrbkbcm	встретились
+mustKeep	hello	руддщ
+mustKeep	привет	ghbdtn
+mustKeep	asdf	фыва
+mustKeep	test	еуые
+mustKeep	foo_bar	ааа_иии
+mustKeep	hello2	руддщ2
+mustKeep	abПр	фыGh
+mustKeep	ё	`
+ambiguous	abc	фыв
+ambiguous	kbr	дши
+ambiguous	привет-мир	ghbdtn-vbh

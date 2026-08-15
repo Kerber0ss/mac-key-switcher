@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build & test (macOS, arm64)
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select latest Xcode (Swift 6)
+        run: |
+          latest=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$latest" ]; then latest=$(ls -d /Applications/Xcode*.app | sort -V | tail -1); fi
+          echo "Selecting $latest"
+          sudo xcode-select -s "$latest/Contents/Developer"
+
+      - name: Show toolchain
+        run: |
+          swift --version
+          sw_vers
+
+      - name: Run tests
+        run: swift test
+
+      - name: Release build (arm64)
+        run: swift build --configuration release --arch arm64
